@@ -14,21 +14,48 @@ async function loadShop() {
     try {
         const response = await fetch('data.json');
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-        try { allProducts = await response.json(); } 
-        catch (e) { throw new Error("Invalid JSON format."); }
+        try { allProducts = await response.json(); } catch (e) { throw new Error("Invalid JSON format."); }
         
         generateDynamicFilters(allProducts);
         setupPriceSlider(allProducts);
+        setupHeroSlider(allProducts); // <--- Build the Slideshow
         renderProducts(allProducts);
 
     } catch (error) {
         console.error("Critical Error:", error);
         if(resultLabel) resultLabel.textContent = "System Error";
-        if(grid) {
-            grid.innerHTML = `<div class="alert alert-danger text-center w-100 p-5"><h4>⚠️ Could not load shop</h4><p>${error.message}</p></div>`;
-        }
+        if(grid) grid.innerHTML = `<div class="alert alert-danger text-center w-100 p-5"><h4>⚠️ Could not load shop</h4><p>${error.message}</p></div>`;
     }
+}
+
+// --- SLIDESHOW LOGIC ---
+function setupHeroSlider(products) {
+    const container = document.getElementById('hero-slides-container');
+    if(!container) return;
+
+    // Pick top 5 Visible products
+    const featured = products.filter(p => p.visible && !p.deleted).slice(0, 5);
+    
+    let html = '';
+    featured.forEach((p, index) => {
+        const activeClass = index === 0 ? 'active' : '';
+        const mainImg = p.image || p.image_hd || 'placeholder.jpg';
+        const gallery = p.gallery || [];
+        const allImages = [mainImg, ...gallery];
+        const safeImages = JSON.stringify(allImages).replace(/"/g, "&quot;");
+
+        html += `
+            <div class="carousel-item ${activeClass} h-100" onclick="openLightbox(${safeImages})">
+                <img src="${mainImg}" class="d-block w-100 hero-img" alt="${p.name}">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5 class="hero-title">${p.name}</h5>
+                    <p class="hero-price">₹${p.discount_price || p.price}</p>
+                    <button class="btn btn-sm btn-outline-light mt-2 rounded-pill px-4">View Details</button>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
 }
 
 // --- SETUP FUNCTIONS ---
@@ -101,12 +128,10 @@ function renderProducts(products) {
     products.forEach(p => {
         const card = document.createElement('div');
         card.className = 'card';
-        
         const mainImg = p.image || p.image_hd || 'placeholder.jpg';
         const gallery = p.gallery || [];
         const allImages = [mainImg, ...gallery];
         const safeImages = JSON.stringify(allImages).replace(/"/g, "&quot;");
-
         let priceHtml = `<span class="final-price">₹${p.price}</span>`;
         if(p.discount_price) priceHtml = `<span class="original-price">₹${p.price}</span> <span class="final-price">₹${p.discount_price}</span>`;
         const stockClass = p.stock === 'Sold Out' ? 'stock-out' : 'stock-badge';
@@ -133,7 +158,7 @@ function renderProducts(products) {
     });
 }
 
-// --- LIGHTBOX (WITH NAVIGATION BUTTONS) ---
+// --- LIGHTBOX ---
 let currentGallery = [];
 let currentIndex = 0;
 
@@ -164,14 +189,10 @@ function updateLightboxImage() {
     const counter = document.getElementById('image-counter');
     const prevBtn = document.querySelector('.prev-btn');
     const nextBtn = document.querySelector('.next-btn');
-
+    
     img.style.opacity = 0.5;
-    setTimeout(() => {
-        img.src = currentGallery[currentIndex];
-        img.style.opacity = 1;
-    }, 150);
+    setTimeout(() => { img.src = currentGallery[currentIndex]; img.style.opacity = 1; }, 150);
 
-    // Show or Hide Buttons based on gallery length
     if(currentGallery.length > 1) {
         if(counter) counter.textContent = `Image ${currentIndex + 1} of ${currentGallery.length}`;
         if(prevBtn) prevBtn.style.display = 'block';
