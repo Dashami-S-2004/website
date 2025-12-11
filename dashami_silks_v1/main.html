@@ -5,19 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashami Silks | Indian Saree Collection</title>
     <link rel="icon" type="image/png" href="product_images/logo_circle.png">
-    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Berkshire+Swash&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Cinzel:wght@600&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <header class="sticky-top shadow-sm">
-    
     <div class="py-3 px-3">
         <div class="container-fluid">
             <div class="row align-items-center g-3">
-                
                 <div class="col-6 col-md-3 d-flex align-items-center gap-3">
                     <img src="product_images/logo.png" alt="Logo" class="logo shadow-sm" onerror="this.style.display='none'">
                     <div class="brand-text text-white lh-1">
@@ -25,21 +26,17 @@
                         <small class="text-white-50 text-uppercase" style="letter-spacing: 1px; font-size: 0.65rem;">Indian Saree Collection</small>
                     </div>
                 </div>
-
                 <div class="col-12 col-md-6 order-3 order-md-2">
                     <div class="input-group">
                         <span class="input-group-text bg-white border-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
                         <input type="text" id="searchBar" class="form-control border-0" placeholder="Search for Silk, Red, Cotton..." onkeyup="applyAllFilters()">
                     </div>
                 </div>
-
                 <div class="col-6 col-md-3 order-2 order-md-3 text-end">
-                    <button class="btn btn-outline-light d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel">
-                        <i class="fa-solid fa-filter"></i> 
-                        <span>Filters</span>
+                    <button id="filterToggleBtn" class="btn btn-outline-light d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel">
+                        <i class="fa-solid fa-filter"></i> <span>Filters</span>
                     </button>
                 </div>
-
             </div>
         </div>
     </div>
@@ -47,25 +44,42 @@
     <div class="collapse bg-white border-bottom border-top" id="filterPanel">
         <div class="container py-4">
             <div class="row g-4">
+                
                 <div class="col-md-6 border-end">
                     <h6 class="text-uppercase text-muted fw-bold mb-3 small">By Category & Fabric</h6>
                     <div id="dynamic-category-filters" class="d-flex flex-wrap gap-2"></div>
                 </div>
+
                 <div class="col-md-6">
                     <div class="row g-3">
+                        
                         <div class="col-12">
-                            <h6 class="text-uppercase text-muted fw-bold mb-2 small">Max Price: ₹<span id="priceValue">10000</span></h6>
-                            <input type="range" class="form-range" id="priceRange" min="500" max="20000" step="500" value="10000" oninput="updatePriceLabel(this.value)" onchange="applyAllFilters()">
-                            <div class="d-flex justify-content-between small text-muted"><span>₹500</span><span>₹20000+</span></div>
+                            <h6 class="text-uppercase text-muted fw-bold mb-3 small">
+                                Price: ₹<span id="priceMinDisplay">0</span> - ₹<span id="priceMaxDisplay">10000</span>
+                            </h6>
+                            
+                            <div class="range-slider-container">
+                                <div class="slider-track"></div>
+                                <input type="range" id="priceRangeMin" min="0" max="10000" value="0" step="500" oninput="updateDualSlider()">
+                                <input type="range" id="priceRangeMax" min="0" max="10000" value="10000" step="500" oninput="updateDualSlider()">
+                            </div>
+                            
+                            <div class="d-flex justify-content-between small text-muted mt-2">
+                                <span>₹0</span>
+                                <span>Max</span>
+                            </div>
                         </div>
+
                         <div class="col-12">
                             <h6 class="text-uppercase text-muted fw-bold mb-2 small">Minimum Rating</h6>
                             <div class="btn-group" role="group">
-                                <input type="radio" class="btn-check" name="ratingBtn" id="rateAll" autocomplete="off" checked onclick="applyAllFilters()">
+                                <input type="radio" class="btn-check rating-opt" name="ratingBtn" id="rateAll" value="0" autocomplete="off" checked onchange="applyAllFilters()">
                                 <label class="btn btn-outline-secondary btn-sm" for="rateAll">All</label>
-                                <input type="radio" class="btn-check" name="ratingBtn" id="rate4" autocomplete="off" onclick="applyAllFilters()">
+
+                                <input type="radio" class="btn-check rating-opt" name="ratingBtn" id="rate4" value="4" autocomplete="off" onchange="applyAllFilters()">
                                 <label class="btn btn-outline-warning btn-sm text-dark" for="rate4">4★ & up</label>
-                                <input type="radio" class="btn-check" name="ratingBtn" id="rate5" autocomplete="off" onclick="applyAllFilters()">
+
+                                <input type="radio" class="btn-check rating-opt" name="ratingBtn" id="rate5" value="5" autocomplete="off" onchange="applyAllFilters()">
                                 <label class="btn btn-outline-warning btn-sm text-dark" for="rate5">5★ only</label>
                             </div>
                         </div>
@@ -77,17 +91,10 @@
 </header>
 
 <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4000">
-    <div class="carousel-inner" id="hero-slides-container">
-        </div>
-    
+    <div class="carousel-inner" id="hero-slides-container"></div>
     <div class="hero-fade-bottom"></div>
-
-    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev" style="z-index: 5;">
-        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next" style="z-index: 5;">
-        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-    </button>
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev" style="z-index: 5;"><span class="carousel-control-prev-icon"></span></button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next" style="z-index: 5;"><span class="carousel-control-next-icon"></span></button>
 </div>
 
 <div class="container my-4 flex-grow-1">
@@ -103,14 +110,11 @@
 
 <div id="lightbox" onclick="if(event.target === this) closeLightbox()">
     <span class="close-btn" onclick="closeLightbox()">&times;</span>
-    
     <button class="nav-btn prev-btn" onclick="changeSlide(-1)">&#10094;</button>
-
     <div class="lightbox-content">
-        <img id="lightbox-img" src="" onclick="changeSlide(1)" title="Click for next image">
+        <img id="lightbox-img" src="" onclick="changeSlide(1)" title="Click for next image" style="cursor: pointer;">
         <div id="image-counter" class="text-white text-center mt-2 small"></div>
     </div>
-
     <button class="nav-btn next-btn" onclick="changeSlide(1)">&#10095;</button>
 </div>
 
