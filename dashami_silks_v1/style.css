@@ -7,14 +7,14 @@
 
 body { background-color: var(--bg); font-family: 'Lato', sans-serif; display: flex; flex-direction: column; min-height: 100vh; }
 
-/* FONTS */
+/* FONTS & HEADER */
 .brand-font { font-family: 'Berkshire Swash', cursive; }
 .brand-text h1 { font-family: 'Berkshire Swash', cursive; font-size: 2.2rem; letter-spacing: 1.5px; font-weight: normal; margin: 0; line-height: 1; }
 .brand-text small { font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: .3px; font-size: 0.7rem; }
-
-/* HEADER & SLIDER CSS (Existing) */
 header { background: var(--primary); }
 .logo { width: 55px; height: 55px; border-radius: 50%; border: 2px solid white; object-fit: cover; background: white; }
+
+/* EXISTING: SLIDER, FILTER, CARDS */
 .range-slider-container { position: relative; width: 100%; height: 30px; text-align: center; }
 .range-slider-container input[type="range"] { position: absolute; left: 0; bottom: 0; width: 100%; pointer-events: none; -webkit-appearance: none; background: none; z-index: 2; }
 .range-slider-container input[type="range"]::-webkit-slider-thumb { pointer-events: auto; -webkit-appearance: none; width: 20px; height: 20px; background: var(--primary); border: 2px solid white; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); margin-top: -8px; }
@@ -32,169 +32,112 @@ header { background: var(--primary); }
 .hero-title { font-family: 'Georgia', serif; font-size: 1.5rem; color: #fff; margin-bottom: 0; }
 .hero-price { font-weight: bold; color: gold; font-size: 1.2rem; }
 
-/* --- PRODUCT CARD STYLES (UPDATED) --- */
 .grid { display: grid; gap: 25px; grid-template-columns: 1fr; }
 @media (min-width: 600px) { .grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 900px) { .grid { grid-template-columns: repeat(3, 1fr); } }
 @media (min-width: 1200px) { .grid { grid-template-columns: repeat(4, 1fr); } }
-
-.card { 
-    background: var(--card-bg); border-radius: 12px; overflow: hidden; 
-    box-shadow: 0 4px 15px rgba(128, 0, 0, 0.08); transition: transform 0.3s, box-shadow 0.3s; 
-    border: none; cursor: pointer; position: relative;
-}
+.card { background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(128, 0, 0, 0.08); transition: transform 0.3s, box-shadow 0.3s; border: none; cursor: pointer; position: relative; }
 .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(128, 0, 0, 0.15); }
-
-/* Card Image Area with Overlay */
 .img-box { position: relative; width: 100%; aspect-ratio: 1/1; background: #eee; overflow: hidden; }
 .product-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
 .card:hover .product-img { transform: scale(1.05); }
-
-/* The "View Details" Overlay */
-.card-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s;
-    display: flex; align-items: center; justify-content: center;
-}
+.card-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s; display: flex; align-items: center; justify-content: center; }
 .card:hover .card-overlay { opacity: 1; }
-.view-btn {
-    background: white; color: var(--primary); padding: 8px 16px;
-    border-radius: 20px; font-weight: bold; font-size: 0.9rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2); transform: translateY(10px); transition: transform 0.3s;
-}
+.view-btn { background: white; color: var(--primary); padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transform: translateY(10px); transition: transform 0.3s; }
 .card:hover .view-btn { transform: translateY(0); }
-
 .info { padding: 15px; text-align: left; }
 .title { font-size: 1.1rem; margin: 5px 0; font-weight: bold; color: #000; }
 .price-area { margin: 8px 0; }
 .original-price { text-decoration: line-through; color: #888; font-size: 0.9em; margin-right: 5px; }
 .final-price { color: var(--primary); font-weight: bold; font-size: 1.2em; }
-.btn-wa { 
-    display: block; background: #25D366; color: white; text-align: center; 
-    padding: 10px; text-decoration: none; border-radius: 6px; font-weight: bold; 
-    margin-top: 10px; transition: background 0.2s;
-}
+.btn-wa { display: block; background: #25D366; color: white; text-align: center; padding: 10px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 10px; transition: background 0.2s; }
 .btn-wa:hover { background: #1ebc57; color: white; }
 
-/* --- LIGHTBOX (PRO SHOWCASE) --- */
-#lightbox {
-    display: none; position: fixed; z-index: 1000; 
-    left: 0; top: 0; width: 100%; height: 100%; 
-    background-color: rgba(0,0,0,0.85);
-    align-items: center; justify-content: center; padding: 15px;
+/* --- PRODUCT DETAILS PAGE STYLES --- */
+.pd-gallery-container {
+    background: #000; border: 1px solid #ddd;
 }
-
-.lightbox-container {
-    background: white; width: 100%; max-width: 950px; height: 85vh;
-    border-radius: 12px; display: flex; overflow: hidden; position: relative;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.5);
+.pd-main-stage {
+    position: relative; width: 100%; height: 500px;
+    display: flex; align-items: center; justify-content: center;
+    background: #f8f8f8; overflow: hidden;
 }
+#pd-main-img { max-height: 100%; max-width: 100%; object-fit: contain; cursor: zoom-in; }
 
-/* Left Side: Image + Thumbnails */
-.lb-image-side {
-    flex: 1.6; background: #111; display: flex; flex-direction: column;
-    position: relative;
-}
-.lb-main-view { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden;}
-#lightbox-img { max-width: 100%; max-height: 100%; object-fit: contain; }
-
-/* Thumbnails Strip */
-.lb-thumb-strip {
-    height: 80px; background: #222; display: flex; align-items: center; 
-    justify-content: center; gap: 10px; padding: 10px; overflow-x: auto;
+.pd-thumb-strip {
+    display: flex; align-items: center; gap: 10px; padding: 15px;
+    background: #fff; overflow-x: auto; border-top: 1px solid #eee;
 }
 .thumb-img {
-    width: 50px; height: 50px; object-fit: cover; border-radius: 4px;
-    cursor: pointer; opacity: 0.5; border: 2px solid transparent; transition: 0.2s;
+    width: 70px; height: 70px; object-fit: cover; border-radius: 6px;
+    cursor: pointer; opacity: 0.6; border: 2px solid transparent; transition: 0.2s;
 }
-.thumb-img:hover, .thumb-img.active { opacity: 1; border-color: var(--primary); }
+.thumb-img:hover, .thumb-img.active { opacity: 1; border-color: var(--primary); transform: scale(1.05); }
 
-/* Right Side: Details */
-.lb-details-side {
-    flex: 1; padding: 30px; display: flex; flex-direction: column;
-    overflow-y: auto; background: #fff;
-}
-
-.close-btn {
-    position: absolute; top: 10px; right: 15px; font-size: 28px; 
-    color: #555; cursor: pointer; z-index: 10;
-    background: rgba(255,255,255,0.8); border-radius: 50%; width: 40px; height: 40px;
-    display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-.close-btn:hover { background: white; color: red; }
-
+/* Navigation Arrows (Shared) */
 .nav-btn {
     position: absolute; top: 50%; transform: translateY(-50%);
-    background: rgba(0,0,0,0.3); border: none; color: white;
-    font-size: 24px; padding: 15px; cursor: pointer; z-index: 5; transition: 0.2s;
+    background: rgba(0,0,0,0.1); border: none; color: #333;
+    font-size: 30px; padding: 15px; cursor: pointer; z-index: 5; transition: 0.2s;
 }
-.nav-btn:hover { background: rgba(255,255,255,0.2); }
+.nav-btn:hover { background: rgba(0,0,0,0.3); color: white; }
 .prev-btn { left: 0; }
 .next-btn { right: 0; }
 
-/* Mobile Stack */
-@media (max-width: 768px) {
-    .lightbox-container { flex-direction: column; height: 95vh; }
-    .lb-image-side { flex: 1.2; }
-    .lb-thumb-strip { height: 60px; }
-    .lb-details-side { flex: 1; padding: 20px; }
-    .close-btn { top: 10px; right: 10px; }
-}
-
-/* --- FOOTER SOCIAL STYLES --- */
-footer { 
-    background: var(--primary); 
-    width: 100%;
-    margin-top: auto;
-    border-top: 4px solid rgba(0,0,0,0.1);
-}
-
-.social-icons a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.1);
-    color: white;
-    font-size: 1.2rem;
-    margin-left: 10px;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.social-icons a:hover {
-    background: white;
-    color: var(--primary);
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-/* --- LIGHTBOX IMAGE COUNTER (The Fix) --- */
 #image-counter {
-    position: absolute; 
-    bottom: 15px; 
-    right: 20px;
-    background: rgba(0, 0, 0, 0.6);
-    color: white; 
-    padding: 4px 12px; 
-    border-radius: 20px; 
-    font-size: 0.85rem;
-    pointer-events: none; /* Allows clicks to pass through to the image */
-    z-index: 6;
+    position: absolute; bottom: 15px; right: 20px;
+    background: rgba(0,0,0,0.6); color: white;
+    padding: 4px 12px; border-radius: 20px; font-size: 0.85rem;
+}
+
+/* Footer & Socials */
+footer { background: var(--primary); width: 100%; margin-top: auto; border-top: 4px solid rgba(0,0,0,0.1); }
+.social-icons a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); color: white; font-size: 1.2rem; margin-left: 10px; text-decoration: none; transition: all 0.3s ease; }
+.social-icons a:hover { background: white; color: var(--primary); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+
+/* --- TRENDING BADGE OVERLAY --- */
+.trending-badge {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10; /* Ensures it sits ABOVE the images */
+    
+    background: rgba(255, 255, 255, 0.9); /* Semi-transparent white */
+    backdrop-filter: blur(4px); /* Glass effect */
+    color: var(--primary); /* Maroon text */
+    
+    padding: 8px 20px;
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
     letter-spacing: 1px;
+    
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    
+    /* Gentle Float Animation */
+    animation: floatBadge 3s ease-in-out infinite;
 }
-/* Add this to your LIGHTBOX section in style.css */
-#image-counter {
-    position: absolute; 
-    bottom: 10px; 
-    right: 20px;
-    background: rgba(0, 0, 0, 0.6);
-    color: white; 
-    padding: 4px 10px; 
-    border-radius: 20px; 
-    font-size: 0.8rem;
-    pointer-events: none; /* Let clicks pass through to the image */
-    z-index: 6;
+
+.trending-badge i {
+    color: #ff4500; /* Orange-Red Fire Icon */
+}
+
+@keyframes floatBadge {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+/* Mobile Adjustment: Make it smaller on phones */
+@media (max-width: 768px) {
+    .trending-badge {
+        top: 15px; left: 15px;
+        padding: 6px 15px;
+        font-size: 0.75rem;
+    }
 }

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details | Dashami Silks</title>
+    <link rel="icon" type="image/png" href="product_images/logo_circle.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Cinzel:wght@600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="sticky-top shadow-sm">
+    <div class="py-3 px-3">
+        <div class="container d-flex align-items-center justify-content-between">
+            
+            <a href="main.html" class="text-decoration-none d-flex align-items-center gap-3">
+                <img src="logo/logo.png" alt="Logo" class="logo shadow-sm" onerror="this.style.display='none'">
+                <div class="brand-text text-white lh-1">
+                    <h1 class="fs-4 m-0 fw-normal">Dashami Silks</h1>
+                    <small class="text-white-50 text-uppercase" style="letter-spacing: 1px;">Indian Saree Collection</small>
+                </div>
+            </a>
+
+            <button onclick="window.close()" class="btn btn-outline-light btn-sm rounded-pill px-4">
+                <i class="fa-solid fa-arrow-left me-2"></i> Back
+            </button>
+
+        </div>
+    </div>
+</header>
+
+<div id="product-details-wrapper" class="container my-5 flex-grow-1">
+    <div class="row g-5">
+        
+        <div class="col-lg-7">
+            <div class="pd-gallery-container shadow-sm rounded overflow-hidden position-relative bg-white">
+                
+                <div class="pd-main-stage">
+                    <button class="nav-btn prev-btn" onclick="changeSlide(-1)">&#10094;</button>
+                    <img id="pd-main-img" src="" class="img-fluid" onclick="changeSlide(1)">
+                    <button class="nav-btn next-btn" onclick="changeSlide(1)">&#10095;</button>
+                    <div id="image-counter"></div>
+                </div>
+
+                <div id="pd-thumbnails" class="pd-thumb-strip mt-2"></div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="pd-info-panel h-100">
+                <span id="pd-cat" class="badge bg-secondary mb-2 text-uppercase" style="letter-spacing: 1px;">Category</span>
+                <h1 id="pd-title" class="brand-font display-6 mb-2">Loading...</h1>
+                
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div id="pd-rating" class="text-warning">★★★★★</div>
+                    <div class="vr"></div>
+                    <span id="pd-stock" class="badge bg-success rounded-pill fw-normal px-3">In Stock</span>
+                </div>
+
+                <div class="price-box mb-4 p-3 bg-light rounded d-flex align-items-center">
+                    <span id="pd-price" class="fs-1 fw-bold text-danger me-3">₹0</span>
+                    <span id="pd-old-price" class="text-muted text-decoration-line-through fs-5"></span>
+                </div>
+
+                <div class="row g-3 mb-4 text-muted">
+                    <div class="col-6 p-3 border rounded bg-light">
+                        <i class="fa-solid fa-layer-group me-2 text-danger"></i> <span class="small text-uppercase fw-bold">Fabric</span><br>
+                        <strong id="pd-fabric" class="text-dark">Silk</strong>
+                    </div>
+                    <div class="col-6 p-3 border rounded bg-light">
+                        <i class="fa-solid fa-palette me-2 text-danger"></i> <span class="small text-uppercase fw-bold">Color</span><br>
+                        <strong id="pd-color" class="text-dark">Red</strong>
+                    </div>
+                </div>
+
+                <h5 class="brand-font border-bottom pb-2 mb-3">Product Description</h5>
+                <p id="pd-desc" class="text-muted mb-5" style="line-height: 1.8;">Loading details...</p>
+
+                <div class="d-grid">
+                    <a id="pd-whatsapp-btn" href="#" target="_blank" class="btn btn-success btn-lg py-3 rounded-pill shadow fw-bold">
+                        <i class="fa-brands fa-whatsapp fa-xl me-2"></i> Buy / Inquire on WhatsApp
+                    </a>
+                    <p class="text-center text-muted extra-small mt-3 mb-0" style="font-size: 0.8rem;">
+                        <i class="fa-solid fa-lock me-1"></i> Secure checkout via WhatsApp
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="text-white py-4 mt-auto">
+    <div class="container text-center">
+        <p class="m-0 small opacity-75">&copy; <span id="year"></span> Dashami Silks. | All rights reserved.</p>
+        <div class="social-icons mt-3" id="footer-socials"></div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,69 +1,191 @@
 const MY_NUMBER = "918904528959"; 
 let allProducts = []; 
+let currentFilteredProducts = []; // Stores the full list of matches
 let activeCategory = 'all'; 
+
+// Infinite Scroll Variables
+let loadedCount = 0; 
+let batchSize = 20; // Default (will update based on device)
+let isLoading = false; // Prevents double-firing
 
 const yearSpan = document.getElementById('year');
 if(yearSpan) yearSpan.textContent = new Date().getFullYear();
 
-// --- MAIN LOADER ---
-async function loadShop() {
-    const resultLabel = document.getElementById('resultCount');
-    const grid = document.getElementById('product-grid');
-
+// --- MAIN CONTROLLER ---
+async function init() {
     try {
         const response = await fetch('data.json');
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         try { allProducts = await response.json(); } catch (e) { throw new Error("Invalid JSON format."); }
         
-        generateDynamicFilters(allProducts);
-        setupDualSlider(allProducts);
-        setupHeroSlider(allProducts);
-        applyAllFilters(); 
         loadFooter();
+
+        // 1. IF ON MAIN SHOP PAGE (main.html)
+        if (document.getElementById('product-grid')) {
+            // Determine Batch Size based on Screen Width
+            updateBatchSize();
+            window.addEventListener('resize', updateBatchSize);
+
+            generateDynamicFilters(allProducts);
+            setupDualSlider(allProducts);
+            setupHeroSlider(allProducts);
+            applyAllFilters(); 
+            
+            // Attach Infinite Scroll Listener
+            window.addEventListener('scroll', handleScroll);
+        }
+
+        // 2. IF ON PRODUCT DETAILS PAGE (product.html)
+        if (document.getElementById('product-details-wrapper')) {
+            loadProductDetails();
+        }
 
     } catch (error) {
         console.error("Critical Error:", error);
-        if(resultLabel) resultLabel.textContent = "System Error";
-        if(grid) grid.innerHTML = `<div class="alert alert-danger text-center w-100 p-5"><h4>⚠️ Could not load shop</h4><p>${error.message}</p></div>`;
     }
 }
 
-// --- FOOTER LOADER ---
-async function loadFooter() {
-    const container = document.getElementById('footer-socials');
-    if(!container) return;
+// --- INFINITE SCROLL LOGIC ---
+function updateBatchSize() {
+    // If width >= 768px (Tablet/PC), load 50. Else (Mobile), load 20.
+    batchSize = window.innerWidth >= 768 ? 50 : 20;
+}
 
-    try {
-        const response = await fetch('footer.json');
-        const links = await response.json();
-
-        let html = '';
-        links.forEach(link => {
-            // Build the Redirect URL with your Branded Page
-            const finalLink = `social_redirect.html?target=${encodeURIComponent(link.url)}&platform=${encodeURIComponent(link.platform)}`;
-            
-            html += `
-                <a href="${finalLink}" target="_blank" title="${link.platform}">
-                    <i class="${link.icon}"></i>
-                </a>
-            `;
-        });
-        container.innerHTML = html;
-
-    } catch (error) {
-        console.error("Could not load footer links:", error);
+function handleScroll() {
+    // Check if user is near bottom of page (within 300px)
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
+        if (!isLoading && loadedCount < currentFilteredProducts.length) {
+            renderNextBatch();
+        }
     }
 }
 
-// --- SETUP FUNCTIONS ---
-function generateDynamicFilters(products) {
-    const container = document.getElementById('dynamic-category-filters');
-    if(!container) return;
-    const categories = new Set();
-    products.forEach(p => { if(p.visible && !p.deleted && p.category) categories.add(p.category); });
-    let html = `<button class="btn btn-sm btn-outline-danger rounded-pill active filter-btn px-3" data-cat="all" onclick="selectCategory('all', this)">All</button>`;
-    categories.forEach(cat => { html += `<button class="btn btn-sm btn-outline-danger rounded-pill filter-btn px-3" data-cat="${cat}" onclick="selectCategory('${cat}', this)">${cat}</button>`; });
-    container.innerHTML = html;
+function renderNextBatch() {
+    isLoading = true;
+    const grid = document.getElementById('product-grid');
+    
+    // Calculate slice
+    const start = loadedCount;
+    const end = Math.min(start + batchSize, currentFilteredProducts.length);
+    const batch = currentFilteredProducts.slice(start, end);
+
+    batch.forEach(p => {
+        const card = createProductCard(p);
+        grid.appendChild(card);
+    });
+
+    loadedCount = end;
+    isLoading = false;
+
+    // Update Counter Text
+    const countLabel = document.getElementById('resultCount');
+    if (countLabel) {
+        countLabel.textContent = `Showing ${loadedCount} of ${currentFilteredProducts.length} products`;
+    }
+}
+
+// --- CORE FUNCTIONS ---
+
+function applyAllFilters() {
+    const searchInput = document.getElementById('searchBar');
+    const minPriceInput = document.getElementById('priceRangeMin');
+    const maxPriceInput = document.getElementById('priceRangeMax');
+    if(!searchInput) return;
+
+    const query = searchInput.value.toLowerCase();
+    const minPrice = parseInt(minPriceInput.value);
+    const maxPrice = parseInt(maxPriceInput.value);
+    const ratingEl = document.querySelector('input[name="ratingBtn"]:checked');
+    const minRating = ratingEl ? parseInt(ratingEl.value) : 0;
+
+    // 1. Filter the FULL list and save to global variable
+    currentFilteredProducts = allProducts.filter(p => {
+        if (!p.visible || p.deleted) return false;
+        const matchesCategory = (activeCategory === 'all') || (p.category === activeCategory) || (p.fabric && p.fabric.includes(activeCategory));
+        const searchStr = ((p.name||'') + (p.category||'') + (p.fabric||'') + (p.color||'')).toLowerCase();
+        const matchesSearch = searchStr.includes(query);
+        const price = parseInt(p.discount_price || p.price || 0);
+        const matchesPrice = price >= minPrice && price <= maxPrice;
+        const matchesRating = (p.stars || 0) >= minRating;
+        return matchesCategory && matchesSearch && matchesPrice && matchesRating;
+    });
+
+    // 2. Reset Grid
+    const grid = document.getElementById('product-grid');
+    grid.innerHTML = '';
+    loadedCount = 0;
+
+    // 3. Render First Batch
+    if (currentFilteredProducts.length === 0) {
+        grid.innerHTML = '<div class="text-center w-100 py-5 text-muted"><h4>No sarees match your filters</h4></div>';
+        document.getElementById('resultCount').textContent = "0 products found";
+    } else {
+        renderNextBatch(); // Loads the first 20 or 50
+    }
+
+    // 4. Update Filter UI Availability
+    checkFilterAvailability(query, minPrice, maxPrice, activeCategory, minRating);
+}
+
+// Helper to create HTML for a single card (Cleaned up from renderProducts)
+function createProductCard(p) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.onclick = () => window.open(`product.html?id=${p.id}`, '_blank');
+
+    const mainImg = p.image || p.image_hd || 'placeholder.jpg';
+    let priceHtml = `<span class="final-price">₹${p.price}</span>`;
+    if(p.discount_price) priceHtml = `<span class="original-price">₹${p.price}</span> <span class="final-price">₹${p.discount_price}</span>`;
+    const stockClass = p.stock === 'Sold Out' ? 'stock-out' : 'stock-badge';
+    const reviewHtml = p.reviews && p.reviews.length > 0 ? `<div class="reviews">"${p.reviews[0]}"</div>` : '';
+    
+    const productUrl = `${window.location.origin}/product.html?id=${p.id}`;
+    const msg = `Hello Dashami Silks, I am interested in:\n*${p.name}*\nID: ${p.id}\nLink: ${productUrl}`;
+    const rawWaLink = `whatsapp://send?phone=${MY_NUMBER}&text=${encodeURIComponent(msg)}`;
+    const link = `social_redirect.html?target=${encodeURIComponent(rawWaLink)}&platform=WhatsApp`;
+
+    card.innerHTML = `
+        <div class="img-box skeleton">
+            <div class="card-overlay"><span class="view-btn">View Details</span></div>
+            <img class="product-img" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.style.border='5px solid red'" src="${mainImg}" alt="${p.name}">
+        </div>
+        <div class="info">
+            <span class="cat">${p.category || 'Saree'} | ${p.fabric || 'Silk'}</span>
+            <h3 class="title">${p.name}</h3>
+            <div class="meta">Color: ${p.color || 'Multi'} | <span class="${stockClass}">${p.stock || 'In Stock'}</span></div>
+            <div class="price-area">${priceHtml}</div>
+            <div style="color:gold; margin-bottom:8px;">${"★".repeat(p.stars || 4)}</div>
+            ${reviewHtml}
+            <a href="${link}" target="_blank" class="btn-wa" onclick="event.stopPropagation()">Buy on WhatsApp</a>
+        </div>
+    `;
+    return card;
+}
+
+// --- REST OF THE LOGIC (Slider, Filters, Product Page, etc.) ---
+
+function checkFilterAvailability(currentQuery, minP, maxP, currentCat, currentRating) {
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        const cat = btn.getAttribute('data-cat');
+        const count = allProducts.filter(p => {
+            if(!p.visible || p.deleted) return false;
+            const searchStr = ((p.name||'') + (p.category||'') + (p.fabric||'') + (p.color||'')).toLowerCase();
+            const price = parseInt(p.discount_price || p.price || 0);
+            const matchS = searchStr.includes(currentQuery);
+            const matchP = price >= minP && price <= maxP;
+            const matchR = (p.stars || 0) >= currentRating;
+            const matchC = (cat === 'all') || (p.category === cat) || (p.fabric && p.fabric.includes(cat));
+            return matchS && matchP && matchR && matchC;
+        }).length;
+        if (count === 0) btn.classList.add('disabled'); else btn.classList.remove('disabled');
+    });
+}
+
+function selectCategory(cat, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCategory = cat;
+    applyAllFilters();
 }
 
 function setupHeroSlider(products) {
@@ -75,7 +197,7 @@ function setupHeroSlider(products) {
         const activeClass = index === 0 ? 'active' : '';
         const mainImg = p.image || p.image_hd || 'placeholder.jpg';
         html += `
-            <div class="carousel-item ${activeClass} h-100" onclick="openLightbox('${p.id}')">
+            <div class="carousel-item ${activeClass} h-100" onclick="window.open('product.html?id=${p.id}', '_blank')">
                 <img src="${mainImg}" class="d-block w-100 hero-img" alt="${p.name}">
                 <div class="carousel-caption d-none d-md-block">
                     <h5 class="hero-title">${p.name}</h5>
@@ -84,6 +206,16 @@ function setupHeroSlider(products) {
                 </div>
             </div>`;
     });
+    container.innerHTML = html;
+}
+
+function generateDynamicFilters(products) {
+    const container = document.getElementById('dynamic-category-filters');
+    if(!container) return;
+    const categories = new Set();
+    products.forEach(p => { if(p.visible && !p.deleted && p.category) categories.add(p.category); });
+    let html = `<button class="btn btn-sm btn-outline-danger rounded-pill active filter-btn px-3" data-cat="all" onclick="selectCategory('all', this)">All</button>`;
+    categories.forEach(cat => { html += `<button class="btn btn-sm btn-outline-danger rounded-pill filter-btn px-3" data-cat="${cat}" onclick="selectCategory('${cat}', this)">${cat}</button>`; });
     container.innerHTML = html;
 }
 
@@ -114,178 +246,75 @@ function updateDualSlider() {
     applyAllFilters();
 }
 
-// --- FILTERING ---
-function selectCategory(cat, btn) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeCategory = cat;
-    applyAllFilters();
-}
+// --- PRODUCT DETAILS PAGE LOGIC ---
+function loadProductDetails() {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('id');
+    const product = allProducts.find(p => p.id === productId);
 
-function applyAllFilters() {
-    const searchInput = document.getElementById('searchBar');
-    const minPriceInput = document.getElementById('priceRangeMin');
-    const maxPriceInput = document.getElementById('priceRangeMax');
-    if(!searchInput) return;
-
-    const query = searchInput.value.toLowerCase();
-    const minPrice = parseInt(minPriceInput.value);
-    const maxPrice = parseInt(maxPriceInput.value);
-    const ratingEl = document.querySelector('input[name="ratingBtn"]:checked');
-    const minRating = ratingEl ? parseInt(ratingEl.value) : 0;
-
-    const filtered = allProducts.filter(p => {
-        if (!p.visible || p.deleted) return false;
-        const matchesCategory = (activeCategory === 'all') || (p.category === activeCategory) || (p.fabric && p.fabric.includes(activeCategory));
-        const searchStr = ((p.name||'') + (p.category||'') + (p.fabric||'') + (p.color||'')).toLowerCase();
-        const matchesSearch = searchStr.includes(query);
-        const price = parseInt(p.discount_price || p.price || 0);
-        const matchesPrice = price >= minPrice && price <= maxPrice;
-        const matchesRating = (p.stars || 0) >= minRating;
-        return matchesCategory && matchesSearch && matchesPrice && matchesRating;
-    });
-
-    document.getElementById('resultCount').textContent = `Showing ${filtered.length} products`;
-    renderProducts(filtered);
-    checkFilterAvailability(query, minPrice, maxPrice, activeCategory, minRating);
-}
-
-function checkFilterAvailability(currentQuery, minP, maxP, currentCat, currentRating) {
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        const cat = btn.getAttribute('data-cat');
-        const count = allProducts.filter(p => {
-            if(!p.visible || p.deleted) return false;
-            const searchStr = ((p.name||'') + (p.category||'') + (p.fabric||'') + (p.color||'')).toLowerCase();
-            const price = parseInt(p.discount_price || p.price || 0);
-            const matchS = searchStr.includes(currentQuery);
-            const matchP = price >= minP && price <= maxP;
-            const matchR = (p.stars || 0) >= currentRating;
-            const matchC = (cat === 'all') || (p.category === cat) || (p.fabric && p.fabric.includes(cat));
-            return matchS && matchP && matchR && matchC;
-        }).length;
-        if (count === 0) btn.classList.add('disabled'); else btn.classList.remove('disabled');
-    });
-}
-
-// --- RENDER FUNCTION ---
-function renderProducts(products) {
-    const grid = document.getElementById('product-grid');
-    if(!grid) return;
-    grid.innerHTML = ''; 
-
-    if(products.length === 0) {
-        grid.innerHTML = '<div class="text-center w-100 py-5 text-muted"><h4>No sarees match your filters</h4></div>';
+    if (!product) {
+        document.getElementById('pd-title').innerText = "Product Not Found";
         return;
     }
 
-    products.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.onclick = () => openLightbox(p.id);
+    document.getElementById('pd-title').innerText = product.name;
+    document.getElementById('pd-cat').innerText = product.category || 'Saree';
+    document.getElementById('pd-desc').innerText = product.desc || 'No description available.';
+    document.getElementById('pd-fabric').innerText = product.fabric || 'Silk';
+    document.getElementById('pd-color').innerText = product.color || 'Multi';
+    document.getElementById('pd-rating').innerText = "★".repeat(product.stars || 4);
+    document.title = `${product.name} | Dashami Silks`;
 
-        const mainImg = p.image || p.image_hd || 'placeholder.jpg';
-        
-        let priceHtml = `<span class="final-price">₹${p.price}</span>`;
-        if(p.discount_price) priceHtml = `<span class="original-price">₹${p.price}</span> <span class="final-price">₹${p.discount_price}</span>`;
-        const stockClass = p.stock === 'Sold Out' ? 'stock-out' : 'stock-badge';
-        const reviewHtml = p.reviews && p.reviews.length > 0 ? `<div class="reviews">"${p.reviews[0]}"</div>` : '';
-        
-        const msg = `Hello Dashami Silks, I am interested in:\n*${p.name}*\nID: ${p.id}`;
-        
-        // --- CHANGED TO whatsapp:// PROTOCOL ---
-        // This skips the website and opens the App directly
-        const rawWaLink = `whatsapp://send?phone=${MY_NUMBER}&text=${encodeURIComponent(msg)}`;
-        
-        // Pass it to your Branded Redirect Page
-        const link = `social_redirect.html?target=${encodeURIComponent(rawWaLink)}&platform=WhatsApp`;
-
-        card.innerHTML = `
-            <div class="img-box skeleton">
-                <div class="card-overlay"><span class="view-btn">View Details</span></div>
-                <img class="product-img" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.style.border='5px solid red'" src="${mainImg}" alt="${p.name}">
-            </div>
-            <div class="info">
-                <span class="cat">${p.category || 'Saree'} | ${p.fabric || 'Silk'}</span>
-                <h3 class="title">${p.name}</h3>
-                <div class="meta">Color: ${p.color || 'Multi'} | <span class="${stockClass}">${p.stock || 'In Stock'}</span></div>
-                <div class="price-area">${priceHtml}</div>
-                <div style="color:gold; margin-bottom:8px;">${"★".repeat(p.stars || 4)}</div>
-                ${reviewHtml}
-                <a href="${link}" target="_blank" class="btn-wa" onclick="event.stopPropagation()">Buy on WhatsApp</a>
-            </div>
-        `;
-        grid.appendChild(card);
-    });
-}
-
-// --- LIGHTBOX LOGIC ---
-let currentGallery = [];
-let currentIndex = 0;
-
-function openLightbox(productId) {
-    const product = allProducts.find(p => p.id === productId);
-    if(!product) return;
-
-    document.getElementById('lb-title').innerText = product.name;
-    document.getElementById('lb-cat').innerText = product.category || 'Saree';
-    document.getElementById('lb-desc').innerText = product.desc || 'No description available.';
-    document.getElementById('lb-fabric').innerText = product.fabric || 'Silk';
-    document.getElementById('lb-color').innerText = product.color || 'Multi';
-    document.getElementById('lb-rating').innerText = "★".repeat(product.stars || 4);
-    
-    const stockEl = document.getElementById('lb-stock');
+    const stockEl = document.getElementById('pd-stock');
     stockEl.innerText = product.stock || 'In Stock';
-    stockEl.className = product.stock === 'Sold Out' ? 'badge bg-danger rounded-pill fw-normal' : 'badge bg-success rounded-pill fw-normal';
+    stockEl.className = product.stock === 'Sold Out' ? 'badge bg-danger rounded-pill fw-normal px-3' : 'badge bg-success rounded-pill fw-normal px-3';
 
     if(product.discount_price) {
-        document.getElementById('lb-price').innerText = `₹${product.discount_price}`;
-        document.getElementById('lb-old-price').innerText = `₹${product.price}`;
+        document.getElementById('pd-price').innerText = `₹${product.discount_price}`;
+        document.getElementById('pd-old-price').innerText = `₹${product.price}`;
     } else {
-        document.getElementById('lb-price').innerText = `₹${product.price}`;
-        document.getElementById('lb-old-price').innerText = "";
+        document.getElementById('pd-price').innerText = `₹${product.price}`;
+        document.getElementById('pd-old-price').innerText = "";
     }
 
-    // --- BUTTON LOGIC (Skipping Website) ---
-    const msg = `Hello Dashami Silks, I want to buy:\n*${product.name}*\nID: ${product.id}`;
+    const pageUrl = window.location.href; 
+    const msg = `Hello Dashami Silks, I want to buy:\n*${product.name}*\nID: ${product.id}\nLink: ${pageUrl}`;
     const rawLink = `whatsapp://send?phone=${MY_NUMBER}&text=${encodeURIComponent(msg)}`;
-    
-    document.getElementById('lb-whatsapp-btn').href = `social_redirect.html?target=${encodeURIComponent(rawLink)}&platform=WhatsApp`;
+    document.getElementById('pd-whatsapp-btn').href = `social_redirect.html?target=${encodeURIComponent(rawLink)}&platform=WhatsApp`;
 
+    // Gallery Setup
     const mainImg = product.image || product.image_hd || 'placeholder.jpg';
     const gallery = product.gallery || [];
-    currentGallery = [mainImg, ...gallery]; 
+    currentGallery = [mainImg, ...gallery];
     currentIndex = 0;
 
-    const thumbContainer = document.getElementById('lb-thumbnails');
+    const thumbContainer = document.getElementById('pd-thumbnails');
     let thumbHTML = '';
     currentGallery.forEach((img, idx) => {
         thumbHTML += `<img src="${img}" class="thumb-img" onclick="jumpToSlide(${idx})">`;
     });
     thumbContainer.innerHTML = thumbHTML;
 
-    updateLightboxImage();
-    document.getElementById('lightbox').style.display = 'flex';
+    updateMainStage();
 }
-
-function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
 
 function changeSlide(direction) {
     if(currentGallery.length <= 1) return;
     currentIndex += direction;
     if (currentIndex >= currentGallery.length) currentIndex = 0;
     if (currentIndex < 0) currentIndex = currentGallery.length - 1;
-    updateLightboxImage();
+    updateMainStage();
 }
 
 function jumpToSlide(index) {
     currentIndex = index;
-    updateLightboxImage();
+    updateMainStage();
 }
 
-function updateLightboxImage() {
-    const img = document.getElementById('lightbox-img');
+function updateMainStage() {
+    const img = document.getElementById('pd-main-img');
     const thumbs = document.querySelectorAll('.thumb-img');
-    const counter = document.getElementById('image-counter'); 
+    const counter = document.getElementById('image-counter');
     
     thumbs.forEach((t, i) => {
         if(i === currentIndex) {
@@ -300,13 +329,28 @@ function updateLightboxImage() {
     setTimeout(() => { img.src = currentGallery[currentIndex]; img.style.opacity = 1; }, 150);
 }
 
-document.addEventListener('keydown', function(event) { if (event.key === "Escape") closeLightbox(); });
+async function loadFooter() {
+    const container = document.getElementById('footer-socials');
+    if(!container) return;
+    try {
+        const response = await fetch('footer.json');
+        const links = await response.json();
+        let html = '';
+        links.forEach(link => {
+            const finalLink = `social_redirect.html?target=${encodeURIComponent(link.url)}&platform=${encodeURIComponent(link.platform)}`;
+            html += `<a href="${finalLink}" target="_blank" title="${link.platform}"><i class="${link.icon}"></i></a>`;
+        });
+        container.innerHTML = html;
+    } catch (error) { console.error("Footer Error:", error); }
+}
+
 document.addEventListener('click', function(event) {
     const filterPanel = document.getElementById('filterPanel');
     const filterBtn = document.getElementById('filterToggleBtn');
-    if (filterPanel.classList.contains('show') && !filterPanel.contains(event.target) && !filterBtn.contains(event.target)) {
+    if (filterPanel && filterPanel.classList.contains('show') && !filterPanel.contains(event.target) && !filterBtn.contains(event.target)) {
         new bootstrap.Collapse(filterPanel).hide();
     }
 });
 
-loadShop();
+// START
+init();
