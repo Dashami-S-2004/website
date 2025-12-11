@@ -12,6 +12,11 @@
     "desc": "A magnificent Royal Blue Kanjivaram silk saree with intricate gold zari borders. Perfect for weddings and grand occasions.",
     "image_hd": "images/saree_01.png",
     "image_thumb": "images/saree_01.png",
+    "gallery": [
+      "images/saree_01.png",
+      "images/saree_01_pallu.png",
+      "images/saree_01_blouse.png"
+    ],
     "reviews": [
       "Absolutely stunning quality. The zari work is real gold.",
       "Fast delivery and beautiful packaging."
@@ -26,12 +31,17 @@
     "fabric": "Banarasi Silk",
     "color": "Crimson Red",
     "price": "6200",
-    "discount_price": "",
+    "discount_price": "5600",
     "stars": 4,
     "stock": "Low Stock",
     "desc": "Traditional Banarasi weave in deep crimson red. Features floral motifs all over the body.",
-    "image_hd": "saree_01.png",
-    "image_thumb": "saree_01.png",
+    "image_hd": "images/saree_01.png",
+    "image_thumb": "images/saree_01.png",
+    "gallery": [
+      "images/saree_01.png",
+      "images/saree_02_side.png",
+      "images/saree_02_drape.png"
+    ],
     "reviews": [
       "The color is exactly as shown in the picture.",
       "Heavy and rich look. Loved it!"
@@ -50,8 +60,12 @@
     "stars": 5,
     "stock": "Sold Out",
     "desc": "Lightweight and breathable cotton saree, ideal for daily wear in summer. Elegant floral block prints.",
-    "image_hd": "saree_03_hd.jpg",
-    "image_thumb": "saree_03_thumb.jpg",
+    "image_hd": "images/saree_03_hd.jpg",
+    "image_thumb": "images/saree_03_thumb.jpg",
+    "gallery": [
+      "images/saree_03_hd.jpg",
+      "images/saree_03_detail.jpg"
+    ],
     "reviews": [
       "Very soft material, comfortable for office wear.",
       "Good value for money."
