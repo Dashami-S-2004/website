@@ -26,14 +26,13 @@ if(yearSpan) yearSpan.textContent = new Date().getFullYear();
 // --- MAIN CONTROLLER ---
 async function init() {
     try {
-        // Load Footer Independently
         loadFooter();
 
         const response = await fetch('data.json');
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         try { allProducts = await response.json(); } catch (e) { throw new Error("Invalid JSON format."); }
         
-        // 1. MAIN SHOP PAGE
+        // 1. MAIN SHOP PAGE LOGIC
         if (document.getElementById('product-grid')) {
             updateBatchSize();
             window.addEventListener('resize', updateBatchSize);
@@ -46,7 +45,7 @@ async function init() {
             window.addEventListener('scroll', handleScroll);
         }
 
-        // 2. PRODUCT DETAILS PAGE
+        // 2. PRODUCT DETAILS PAGE LOGIC
         if (document.getElementById('product-details-wrapper')) {
             loadProductDetails();
         }
@@ -95,16 +94,12 @@ function renderNextBatch() {
     }, 600);
 }
 
-// --- HELPER: CREATE CARD ---
-// ... (Keep init, loadFooter, infinite scroll, filtering, slider logic same as before) ...
-
-// --- HELPER: CREATE CARD (UPDATED FOR OLD STYLE) ---
+// --- HELPER: CREATE CARD (OLD STYLE LOGIC) ---
 function createProductCard(p) {
     const card = document.createElement('div');
     card.className = 'card h-100'; 
     card.onclick = () => window.open(`product.html?id=${p.id}`, '_blank');
 
-    // Safe Data
     const safeName = p.name || "Unknown Product";
     const safeCat = p.category || "Saree";
     const safeFab = p.fabric || "Silk";
@@ -112,9 +107,11 @@ function createProductCard(p) {
     const safeStock = p.stock || "Ready to Ship";
     const safeColor = p.color || "Multi";
     
-    // Quote/Snippet Logic (First sentence or default)
+    // SMART SNIPPET: Use Review if available, else Description
     let snippet = '"Absolutely stunning quality. The zari work is real gold."';
-    if(p.desc) {
+    if(p.reviews && p.reviews.length > 0) {
+        snippet = `"${p.reviews[0]}"`;
+    } else if(p.desc) {
         snippet = `"${p.desc.split('.')[0]}."`; 
     }
 
@@ -127,7 +124,6 @@ function createProductCard(p) {
         }
     }
     
-    // WhatsApp Logic
     const productUrl = `${window.location.origin}/product.html?id=${p.id}`;
     const msg = `Hello Dashami Silks, I am interested in:\n*${safeName}*\nID: ${p.id}\nLink: ${productUrl}`;
     const rawWaLink = `whatsapp://send?phone=${MY_NUMBER}&text=${encodeURIComponent(msg)}`;
@@ -155,8 +151,6 @@ function createProductCard(p) {
     `;
     return card;
 }
-
-// ... (Keep the rest of the file: applyAllFilters, loadProductDetails, setupHeroSlider, etc.) ...
 
 // --- FILTERING ---
 function applyAllFilters() {
@@ -213,10 +207,6 @@ async function loadFooter() {
     } catch (error) { console.error("Footer Error:", error); }
 }
 
-// ... (Existing Helpers: selectCategory, generateDynamicFilters, setupHeroSlider, setupDualSlider, updateDualSlider, checkFilterAvailability, loadProductDetails, changeSlide, jumpToSlide, updateMainStage, event listeners) ...
-// NOTE: Ensure you keep the rest of the functions from your previous working script or the one I provided in the Product Page step. They are critical.
-
-// RE-ADDING ESSENTIAL HELPERS FOR COMPLETENESS:
 function selectCategory(cat, btn) {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -294,7 +284,7 @@ function checkFilterAvailability(currentQuery, minP, maxP, currentCat, currentRa
     });
 }
 
-// Product Page Logic Re-included
+// Product Page Logic
 let currentGallery = [];
 let currentIndex = 0;
 function loadProductDetails() {
@@ -350,6 +340,7 @@ function changeSlide(direction) {
 function jumpToSlide(index) { currentIndex = index; updateMainStage(); }
 function updateMainStage() {
     const img = document.getElementById('pd-main-img');
+    const fullImg = document.getElementById('fullscreen-img'); 
     const thumbs = document.querySelectorAll('.thumb-img');
     const counter = document.getElementById('image-counter');
     thumbs.forEach((t, i) => {
@@ -359,7 +350,26 @@ function updateMainStage() {
     if (counter) counter.textContent = `${currentIndex + 1} / ${currentGallery.length}`;
     img.style.opacity = 0.5;
     setTimeout(() => { img.src = currentGallery[currentIndex]; img.style.opacity = 1; }, 150);
+    
+    // Sync zoom view
+    if(fullImg) fullImg.src = currentGallery[currentIndex];
 }
+
+// Zoom Logic
+function openFullscreen() {
+    const viewer = document.getElementById('full-image-viewer');
+    const fullImg = document.getElementById('fullscreen-img');
+    fullImg.src = currentGallery[currentIndex];
+    viewer.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function closeFullscreen() {
+    document.getElementById('full-image-viewer').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+document.addEventListener('keydown', function(event) {
+    if (event.key === "Escape") closeFullscreen();
+});
 
 document.addEventListener('click', function(event) {
     const filterPanel = document.getElementById('filterPanel');

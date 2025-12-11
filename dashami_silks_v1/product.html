@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Product Details | Dashami Silks</title>
     <link rel="icon" type="image/png" href="product_images/logo_circle.png">
     
@@ -19,7 +19,6 @@
 <header class="sticky-top shadow-sm">
     <div class="py-3 px-3">
         <div class="container d-flex align-items-center justify-content-between">
-            
             <a href="main.html" class="text-decoration-none d-flex align-items-center gap-3">
                 <img src="logo/logo.png" alt="Logo" class="logo shadow-sm" onerror="this.style.display='none'">
                 <div class="brand-text text-white lh-1">
@@ -27,11 +26,9 @@
                     <small class="text-white-50 text-uppercase" style="letter-spacing: 1px;">Indian Saree Collection</small>
                 </div>
             </a>
-
             <button onclick="window.close()" class="btn btn-outline-light btn-sm rounded-pill px-4">
                 <i class="fa-solid fa-arrow-left me-2"></i> Back
             </button>
-
         </div>
     </div>
 </header>
@@ -44,7 +41,9 @@
                 
                 <div class="pd-main-stage">
                     <button class="nav-btn prev-btn" onclick="changeSlide(-1)">&#10094;</button>
-                    <img id="pd-main-img" src="" class="img-fluid" onclick="changeSlide(1)">
+                    
+                    <img id="pd-main-img" src="" class="img-fluid" onclick="openFullscreen()" title="Click to Zoom">
+                    
                     <button class="nav-btn next-btn" onclick="changeSlide(1)">&#10095;</button>
                     <div id="image-counter"></div>
                 </div>
@@ -91,10 +90,15 @@
                         <i class="fa-solid fa-lock me-1"></i> Secure checkout via WhatsApp
                     </p>
                 </div>
-
             </div>
         </div>
     </div>
+</div>
+
+<div id="full-image-viewer" onclick="closeFullscreen()">
+    <span class="close-zoom">&times;</span>
+    <img id="fullscreen-img" src="" onclick="event.stopPropagation()"> <button class="nav-btn prev-btn" style="position:fixed; left:20px;" onclick="event.stopPropagation(); changeSlide(-1)">&#10094;</button>
+    <button class="nav-btn next-btn" style="position:fixed; right:20px;" onclick="event.stopPropagation(); changeSlide(1)">&#10095;</button>
 </div>
 
 <footer class="text-white py-4 mt-auto">
