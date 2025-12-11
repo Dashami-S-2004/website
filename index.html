@@ -6,7 +6,7 @@
         fetch('version.json')
             .then(response => response.json())
             .then(data => {
-                window.location.href = "./" + data.current_version + "/index.html";
+                window.location.href = "./" + data.current_version + "/main.html";
             })
             .catch(e => document.write("Error finding shop version."));
     </script>
