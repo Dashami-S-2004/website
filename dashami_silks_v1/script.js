@@ -41,12 +41,13 @@ function renderProducts(products) {
         const msg = `Hello Dashami Silks, I am interested in:\n*${p.name}*\nID: ${p.id}\nPrice: ₹${p.discount_price || p.price}`;
         const link = `https://wa.me/${MY_NUMBER}?text=${encodeURIComponent(msg)}`;
 
+        // FIXED: Removed "product_images/" prefix. Now it uses exactly what is in JSON.
         card.innerHTML = `
-            <div class="img-box skeleton" onclick="openLightbox('product_images/${p.image_hd}')">
+            <div class="img-box skeleton" onclick="openLightbox('${p.image_hd}')">
                 <img class="product-img" 
                      onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"
-                     src="product_images/${p.image_hd}" 
-                     srcset="product_images/${p.image_thumb} 400w, product_images/${p.image_hd} 1200w"
+                     src="${p.image_hd}" 
+                     srcset="${p.image_thumb} 400w, ${p.image_hd} 1200w"
                      sizes="(max-width: 600px) 400px, 1200px"
                      alt="${p.name}">
             </div>
