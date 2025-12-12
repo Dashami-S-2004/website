@@ -3,21 +3,29 @@ let allProducts = [];
 let currentFilteredProducts = []; 
 let activeCategory = 'all'; 
 let loadedCount = 0; 
-const BATCH_SIZE = 5; // CONSTANT: Strictly 50
+
+// CONFIGURATION
+// If screen is less than 768px (Mobile), load 20. Otherwise load 50.
+const isMobile = window.innerWidth < 768;
+const BATCH_SIZE = isMobile ? 20 : 50; 
+const BUTTON_CLICK_LIMIT = 2; 
+
+// State Variables
+let loadMoreClicks = 0; 
+let isInfiniteScrollEnabled = false;
 let isLoading = false;
+let renderTimeout = null; 
 
 // Global Error Handler
 window.addEventListener('error', function(e) {
     if (e.target.tagName === 'IMG') {
         const src = e.target.src;
-        if(!src.includes('logo/logo.png') && !src.includes('product_images/logo_circle.png')) {
-             e.target.src = 'logo/logo.png';
+        if(!src.includes('product_images/logo_circle.png')) {
+             e.target.src = 'product_images/logo_circle.png';
              e.target.classList.add('opacity-50', 'p-4');
              if(e.target.parentElement.classList.contains('skeleton')) {
                 e.target.parentElement.classList.remove('skeleton');
             }
-        } else if (src.includes('logo/logo.png')) {
-            e.target.src = 'product_images/logo_circle.png';
         }
     }
 }, true);
@@ -35,21 +43,137 @@ async function init() {
         try { allProducts = await response.json(); } catch (e) { throw new Error("Invalid JSON format."); }
         
         generateDynamicFilters(allProducts);
-        setupDualSlider(allProducts);
-        setupHeroSlider(allProducts);
         
-        // Setup the manual load button
+        setupHeroSlider(allProducts);
         setupLoadMoreButton(); 
         
-        // Triggers the first batch of 50
-        applyAllFilters(); 
+        // Setup slider & trigger first load
+        setupDualSlider(allProducts);
 
     } catch (error) {
         console.error("Critical Error:", error);
     }
 }
 
-// Function to create and insert the Load More button
+// === UPDATED HERO SLIDER WITH FIX ===
+function setupHeroSlider(products) {
+    const container = document.getElementById('hero-slides-container');
+    const carouselEl = document.getElementById('heroCarousel');
+    if(!container || !carouselEl) return;
+
+    // 1. STRICT FILTER: Must have image
+    const validProducts = products.filter(p => 
+        p.visible && 
+        !p.deleted && 
+        ( (p.image && p.image.trim() !== "") || (p.image_hd && p.image_hd.trim() !== "") )
+    );
+
+    if (validProducts.length === 0) {
+        container.innerHTML = '<div class="carousel-item active"><div class="d-flex align-items-center justify-content-center h-100 bg-dark text-white">No Featured Products</div></div>';
+        return;
+    }
+
+    // 2. Randomize and pick 5
+    const shuffled = [...validProducts].sort(() => 0.5 - Math.random());
+    const featured = shuffled.slice(0, 5);
+
+    // 3. Inject Animation Styles (Zoom/Pan + Dots)
+    if (!document.getElementById('hero-anim-styles')) {
+        const style = document.createElement('style');
+        style.id = 'hero-anim-styles';
+        style.innerHTML = `
+            @keyframes kbZoomIn { from { transform: scale(1); } to { transform: scale(1.15); } }
+            @keyframes kbZoomOut { from { transform: scale(1.15); } to { transform: scale(1); } }
+            @keyframes kbPanRight { from { transform: scale(1.15) translateX(-15px); } to { transform: scale(1.15) translateX(0); } }
+            @keyframes kbPanLeft { from { transform: scale(1.15) translateX(0); } to { transform: scale(1.15) translateX(-15px); } }
+            
+            .hero-anim-img {
+                width: 100%; height: 100%; object-fit: cover;
+                transform-origin: center center;
+            }
+            .carousel-item.active .hero-anim-img {
+                animation-duration: 6s;
+                animation-timing-function: ease-in-out;
+                animation-fill-mode: forwards;
+            }
+            .fx-zoom-in { animation-name: kbZoomIn; }
+            .fx-zoom-out { animation-name: kbZoomOut; }
+            .fx-pan-right { animation-name: kbPanRight; }
+            .fx-pan-left { animation-name: kbPanLeft; }
+            
+            /* Custom Dot Styles */
+            .carousel-indicators { margin-bottom: 1.5rem; }
+            .carousel-indicators [data-bs-target] {
+                width: 10px; height: 10px; border-radius: 50%;
+                background-color: #fff; opacity: 0.6; margin: 0 6px; border: none;
+                transition: all 0.3s ease;
+            }
+            .carousel-indicators .active { 
+                opacity: 1; 
+                background-color: #800000; /* Maroon Active Dot */
+                transform: scale(1.3); 
+                box-shadow: 0 0 5px rgba(255,255,255,0.5);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const effects = ['fx-zoom-in', 'fx-zoom-out', 'fx-pan-right', 'fx-pan-left'];
+
+    // 4. Generate Slides
+    let slidesHtml = '';
+    featured.forEach((p, index) => {
+        const activeClass = index === 0 ? 'active' : '';
+        const mainImg = (p.image_hd && p.image_hd.trim()) ? p.image_hd : p.image;
+        const randomEffect = effects[Math.floor(Math.random() * effects.length)];
+
+        slidesHtml += `
+            <div class="carousel-item ${activeClass} h-100" data-bs-interval="4000" onclick="window.open('product.html?id=${p.id}', '_blank')">
+                <div style="overflow:hidden; width:100%; height:100%;">
+                    <img src="${mainImg}" class="d-block w-100 hero-anim-img ${randomEffect}" alt="${p.name}">
+                </div>
+                <div class="carousel-caption d-none d-md-block">
+                    <h5 class="hero-title">${p.name}</h5>
+                    <p class="hero-price">₹${p.discount_price || p.price}</p>
+                    <button class="btn btn-sm btn-outline-light mt-2 rounded-pill px-4">View Details</button>
+                </div>
+            </div>`;
+    });
+    container.innerHTML = slidesHtml;
+
+    // 5. Generate Dots
+    const existingIndicators = carouselEl.querySelector('.carousel-indicators');
+    if(existingIndicators) existingIndicators.remove();
+
+    const indicatorsDiv = document.createElement('div');
+    indicatorsDiv.className = 'carousel-indicators';
+    
+    let dotsHtml = '';
+    featured.forEach((_, index) => {
+        const activeState = index === 0 ? 'class="active" aria-current="true"' : '';
+        // CRITICAL: data-bs-target MUST match the ID in HTML exactly (#heroCarousel)
+        dotsHtml += `<button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="${index}" ${activeState} aria-label="Slide ${index + 1}"></button>`;
+    });
+    indicatorsDiv.innerHTML = dotsHtml;
+    carouselEl.appendChild(indicatorsDiv);
+
+    // 6. === CRITICAL FIX: RE-INITIALIZE BOOTSTRAP CAROUSEL ===
+    // This forces Bootstrap to recognize the new slides and dots
+    try {
+        if (window.bootstrap) {
+            const carouselInstance = bootstrap.Carousel.getOrCreateInstance(carouselEl);
+            carouselInstance.dispose(); // Destroy old instance to clear state
+            new bootstrap.Carousel(carouselEl, {
+                interval: 4000,
+                ride: 'carousel',
+                pause: 'hover'
+            });
+        }
+    } catch(e) { 
+        console.log("Carousel init notice:", e); 
+    }
+}
+
 function setupLoadMoreButton() {
     let btnContainer = document.getElementById('load-more-container');
     
@@ -58,7 +182,6 @@ function setupLoadMoreButton() {
         btnContainer.id = 'load-more-container';
         btnContainer.className = 'text-center my-4'; 
         
-        // Insert after the product grid
         const grid = document.getElementById('product-grid');
         if (grid) {
             grid.parentNode.insertBefore(btnContainer, grid.nextSibling);
@@ -71,57 +194,82 @@ function setupLoadMoreButton() {
         `;
 
         const btn = document.getElementById('loadMoreBtn');
-        if(btn) btn.addEventListener('click', renderNextBatch);
+        if(btn) {
+            btn.addEventListener('click', function() {
+                loadMoreClicks++; 
+                renderNextBatch();
+            });
+        }
+    }
+}
+
+function handleScroll() {
+    if (!isInfiniteScrollEnabled || isLoading) return;
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+        if (loadedCount < currentFilteredProducts.length) {
+            renderNextBatch();
+        }
     }
 }
 
 function renderNextBatch() {
+    if (renderTimeout) clearTimeout(renderTimeout);
+
     isLoading = true;
     const loader = document.getElementById('infinite-loader');
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     const grid = document.getElementById('product-grid');
 
-    // Hide button while loading
-    if(loadMoreBtn) loadMoreBtn.style.display = 'none';
     if(loader) loader.classList.remove('d-none');
+    if(loadMoreBtn) loadMoreBtn.style.display = 'none';
 
-    setTimeout(() => {
-        // STRICT CALCULATION
+    renderTimeout = setTimeout(() => {
         const total = currentFilteredProducts.length;
         const start = loadedCount;
-        const end = Math.min(start + BATCH_SIZE, total); // Ensures we never go past 50 more
+        const end = Math.min(start + BATCH_SIZE, total); 
         
+        if (start >= total) {
+             isLoading = false;
+             if(loader) loader.classList.add('d-none');
+             return;
+        }
+
         const batch = currentFilteredProducts.slice(start, end);
 
-        // Render cards
         batch.forEach(p => {
             const card = createProductCard(p);
             grid.appendChild(card);
         });
 
-        loadedCount = end; // Update global counter
+        loadedCount = end;
         isLoading = false;
         
         if(loader) loader.classList.add('d-none');
         
-        // Update "Showing X of Y" text
         const countLabel = document.getElementById('resultCount');
         if (countLabel) countLabel.textContent = `Showing ${loadedCount} of ${total} products`;
 
-        // Button Visibility Logic
-        if (loadMoreBtn) {
-            if (loadedCount < total) {
-                // Show button if there are products remaining
-                loadMoreBtn.style.display = 'inline-block';
-                const remaining = total - loadedCount;
-                loadMoreBtn.textContent = `Load More (${remaining} remaining)`;
+        if (loadedCount < total) {
+            if (loadMoreClicks >= BUTTON_CLICK_LIMIT) {
+                if (!isInfiniteScrollEnabled) {
+                    isInfiniteScrollEnabled = true;
+                    window.addEventListener('scroll', handleScroll);
+                }
+                if(loadMoreBtn) loadMoreBtn.style.display = 'none';
+            
             } else {
-                // Hide button if all products are shown
-                loadMoreBtn.style.display = 'none';
+                if(loadMoreBtn) {
+                    loadMoreBtn.style.display = 'inline-block';
+                    const remaining = total - loadedCount;
+                    loadMoreBtn.textContent = `Load More (${remaining} remaining)`;
+                }
             }
+        } else {
+             if(loadMoreBtn) loadMoreBtn.style.display = 'none';
+             window.removeEventListener('scroll', handleScroll);
         }
 
-    }, 500);
+    }, 300);
 }
 
 function createProductCard(p) {
@@ -132,7 +280,10 @@ function createProductCard(p) {
     const safeName = p.name || "Unknown Product";
     const safeCat = p.category || "Saree";
     const safeFab = p.fabric || "Silk";
-    const safeImg = p.image || p.image_hd || 'logo/logo.png';
+
+    const safeImg = (p.image && p.image.trim()) ? p.image : 
+                   (p.image_hd && p.image_hd.trim()) ? p.image_hd : 'product_images/logo_circle.png';
+                   
     const safeStock = p.stock || "Ready to Ship";
     const safeColor = p.color || "Multi";
     
@@ -161,6 +312,7 @@ function createProductCard(p) {
         <div class="img-box skeleton">
             <div class="card-overlay"><span class="view-btn">View Details</span></div>
             <img class="product-img" 
+                 loading="lazy"
                  onload="this.parentElement.classList.remove('skeleton')" 
                  src="${safeImg}" 
                  alt="${safeName}">
@@ -181,6 +333,12 @@ function createProductCard(p) {
 }
 
 function applyAllFilters() {
+    if (renderTimeout) clearTimeout(renderTimeout);
+
+    loadMoreClicks = 0;
+    isInfiniteScrollEnabled = false;
+    window.removeEventListener('scroll', handleScroll);
+
     const searchInput = document.getElementById('searchBar');
     const minPriceInput = document.getElementById('priceRangeMin');
     const maxPriceInput = document.getElementById('priceRangeMax');
@@ -195,24 +353,18 @@ function applyAllFilters() {
     currentFilteredProducts = allProducts.filter(p => {
         if (!p.visible || p.deleted) return false;
         const matchesCategory = (activeCategory === 'all') || (p.category === activeCategory) || (p.fabric && p.fabric.includes(activeCategory));
-        
-        // Includes ID Search
         const searchStr = ((p.name||'') + (p.category||'') + (p.fabric||'') + (p.color||'') + (p.id||'')).toLowerCase();
-        
         const price = parseInt(p.discount_price || p.price || 0);
-        
         return matchesCategory && 
                searchStr.includes(query) && 
                (price >= minPrice && price <= maxPrice) && 
                ((p.stars || 0) >= minRating);
     });
 
-    // RESET EVERYTHING FOR NEW SEARCH
     const grid = document.getElementById('product-grid');
     grid.innerHTML = '';
     loadedCount = 0; 
 
-    // Hide button initially
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     if(loadMoreBtn) loadMoreBtn.style.display = 'none';
 
@@ -220,7 +372,7 @@ function applyAllFilters() {
         grid.innerHTML = '<div class="text-center w-100 py-5 text-muted"><h4>No sarees match your filters</h4></div>';
         document.getElementById('resultCount').textContent = "0 products found";
     } else {
-        renderNextBatch(); // This will load exactly 50
+        renderNextBatch(); 
     }
 
     checkFilterAvailability(query, minPrice, maxPrice, activeCategory, minRating);
@@ -258,27 +410,6 @@ function generateDynamicFilters(products) {
     container.innerHTML = html;
 }
 
-function setupHeroSlider(products) {
-    const container = document.getElementById('hero-slides-container');
-    if(!container) return;
-    const featured = products.filter(p => p.visible && !p.deleted).slice(0, 5);
-    let html = '';
-    featured.forEach((p, index) => {
-        const activeClass = index === 0 ? 'active' : '';
-        const mainImg = p.image || p.image_hd || 'logo/logo.png';
-        html += `
-            <div class="carousel-item ${activeClass} h-100" onclick="window.open('product.html?id=${p.id}', '_blank')">
-                <img src="${mainImg}" class="d-block w-100 hero-img" alt="${p.name}">
-                <div class="carousel-caption d-none d-md-block">
-                    <h5 class="hero-title">${p.name}</h5>
-                    <p class="hero-price">₹${p.discount_price || p.price}</p>
-                    <button class="btn btn-sm btn-outline-light mt-2 rounded-pill px-4">View Details</button>
-                </div>
-            </div>`;
-    });
-    container.innerHTML = html;
-}
-
 function setupDualSlider(products) {
     let maxPrice = 0;
     products.forEach(p => { let price = parseInt(p.discount_price || p.price || 0); if(price > maxPrice) maxPrice = price; });
@@ -303,6 +434,7 @@ function updateDualSlider() {
     const percentMin = (minVal / rangeMin.max) * 100;
     const percentMax = (maxVal / rangeMax.max) * 100;
     track.style.background = `linear-gradient(to right, #ddd ${percentMin}%, var(--primary) ${percentMin}%, var(--primary) ${percentMax}%, #ddd ${percentMax}%)`;
+    
     applyAllFilters();
 }
 
@@ -311,10 +443,7 @@ function checkFilterAvailability(currentQuery, minP, maxP, currentCat, currentRa
         const cat = btn.getAttribute('data-cat');
         const count = allProducts.filter(p => {
             if(!p.visible || p.deleted) return false;
-            
-            // ID check here for filter button states
             const searchStr = ((p.name||'') + (p.category||'') + (p.fabric||'') + (p.color||'') + (p.id||'')).toLowerCase();
-            
             const price = parseInt(p.discount_price || p.price || 0);
             const matchS = searchStr.includes(currentQuery);
             const matchP = price >= minP && price <= maxP;

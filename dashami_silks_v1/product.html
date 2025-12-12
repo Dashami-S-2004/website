@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Product Details | Dashami Silk</title>
+    <title>Product Details | Dashami Silks</title>
     <link rel="icon" type="image/png" href="product_images/logo_circle.png">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,42 +12,82 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="main.css">
     <link rel="stylesheet" href="product.css">
 </head>
 <body>
 
 <header class="sticky-top shadow-sm">
-    <div class="py-3 px-3">
+    <div class="px-3 py-2">
         <div class="container d-flex align-items-center justify-content-between">
-            <a href="main.html" class="text-decoration-none d-flex align-items-center gap-3">
-                <img src="logo/logo.png" alt="Logo" class="logo shadow-sm" onerror="this.style.display='none'">
-                <div class="brand-text text-white lh-1">
-                    <h1 class="fs-4 m-0 fw-normal">Dashami Silk</h1>
-                    <small class="text-white-50 text-uppercase" style="letter-spacing: 1px;">Indian Saree Collection</small>
-                </div>
-            </a>
-            <button onclick="window.close()" class="btn btn-outline-light btn-sm rounded-pill px-4">
-                <i class="fa-solid fa-arrow-left me-2"></i> Back
-            </button>
+            
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link text-white p-0 me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideMenu" aria-controls="sideMenu">
+                    <i class="fa-solid fa-bars fa-lg"></i>
+                </button>
+
+                <a href="main.html" class="d-flex align-items-center text-decoration-none text-white">
+                    <img src="logo/logo.png" alt="Logo" class="logo shadow-sm d-none d-md-block me-2" style="width: 35px; height: 35px;" onerror="this.src='product_images/logo_circle.png'">
+                    <div class="brand-text lh-1">
+                        <h1 class="fs-5 m-0 fw-normal">Dashami Silks</h1>
+                    </div>
+                </a>
+            </div>
+
+            <div>
+                <a href="main.html" class="btn btn-outline-light btn-sm rounded-pill px-4">
+                    <i class="fa-solid fa-arrow-left me-2"></i> Back
+                </a>
+            </div>
+
         </div>
     </div>
 </header>
+
+<div class="offcanvas offcanvas-start" tabindex="-1" id="sideMenu" aria-labelledby="sideMenuLabel" style="background-color: #FFF0E6;">
+  <div class="offcanvas-header border-bottom border-danger-subtle">
+    <div class="d-flex align-items-center gap-2">
+        <img src="logo/logo.png" alt="Logo" class="rounded-circle border border-danger" width="40" height="40" onerror="this.src='product_images/logo_circle.png'">
+        <h5 class="offcanvas-title brand-font text-danger" id="sideMenuLabel">Dashami Silks</h5>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body p-0">
+    <div class="list-group list-group-flush bg-transparent">
+        <a href="main.html" class="list-group-item list-group-item-action bg-transparent border-danger-subtle py-3 fw-bold text-danger">
+            <i class="fa-solid fa-house me-3"></i> Home
+        </a>
+        <a href="about.html" class="list-group-item list-group-item-action bg-transparent border-danger-subtle py-3 fw-bold text-danger">
+            <i class="fa-solid fa-circle-info me-3"></i> About Us
+        </a>
+        <button class="list-group-item list-group-item-action bg-transparent border-danger-subtle py-3 fw-bold text-danger text-start" data-bs-toggle="modal" data-bs-target="#contactModal">
+            <i class="fa-solid fa-address-book me-3"></i> Contact
+        </button>
+    </div>
+    
+    <div class="p-3 mt-2">
+        <h6 class="text-uppercase text-muted fw-bold small mb-3 ps-2">Store Policies</h6>
+        <div class="list-group list-group-flush rounded border border-danger-subtle overflow-hidden">
+            <a href="policies.html" class="list-group-item list-group-item-action bg-white border-danger-subtle py-2 small">Terms & Conditions</a>
+            <a href="policies.html" class="list-group-item list-group-item-action bg-white border-danger-subtle py-2 small">Privacy Policy</a>
+            <a href="policies.html" class="list-group-item list-group-item-action bg-white border-danger-subtle py-2 small">Refund Policy</a>
+            <a href="policies.html" class="list-group-item list-group-item-action bg-white border-danger-subtle py-2 small">Shipping Policy</a>
+        </div>
+    </div>
+  </div>
+</div>
 
 <div id="product-details-wrapper" class="container my-3 my-lg-5 flex-grow-1">
     <div class="row g-5">
         
         <div class="col-lg-7">
             <div class="pd-gallery-container shadow-sm rounded overflow-hidden position-relative bg-white">
-                
                 <div class="pd-main-stage">
                     <button class="nav-btn prev-btn" onclick="changeSlide(-1)">&#10094;</button>
-                    
                     <img id="pd-main-img" src="" class="img-fluid" onclick="openFullscreen()" title="Click to Zoom">
-                    
                     <button class="nav-btn next-btn" onclick="changeSlide(1)">&#10095;</button>
                     <div id="image-counter"></div>
                 </div>
-
                 <div id="pd-thumbnails" class="pd-thumb-strip mt-2"></div>
             </div>
         </div>
@@ -97,16 +137,89 @@
 
 <div id="full-image-viewer" onclick="closeFullscreen()">
     <span class="close-zoom">&times;</span>
-    <img id="fullscreen-img" src="" onclick="event.stopPropagation()"> <button class="nav-btn prev-btn" style="position:fixed; left:20px;" onclick="event.stopPropagation(); changeSlide(-1)">&#10094;</button>
+    <img id="fullscreen-img" src="" onclick="event.stopPropagation()"> 
+    <button class="nav-btn prev-btn" style="position:fixed; left:20px;" onclick="event.stopPropagation(); changeSlide(-1)">&#10094;</button>
     <button class="nav-btn next-btn" style="position:fixed; right:20px;" onclick="event.stopPropagation(); changeSlide(1)">&#10095;</button>
 </div>
 
-<footer class="text-white py-4 mt-auto">
-    <div class="container text-center">
-        <p class="m-0 small opacity-75">&copy; <span id="year"></span> Dashami Silk. | All rights reserved.</p>
-        <div class="social-icons mt-3" id="footer-socials"></div>
+<footer class="text-white py-5 mt-auto">
+    <div class="container">
+        <div class="row gy-4">
+            <div class="col-lg-5 text-center text-lg-start">
+                <h5 class="brand-font mb-3">Dashami Silks</h5>
+                <p class="small opacity-75 mb-2">
+                    <i class="fa-solid fa-location-dot me-2"></i>
+                    Sri, Ramalinga chowdeshwari temple road, Saraswathipura, Weavers Colony, Nelamangala Town, Vajarahalli, Karnataka 562123.
+                </p>
+                <p class="small opacity-75 mb-3">
+                    <i class="fa-solid fa-phone me-2"></i> +91 9880408959
+                </p>
+                <div class="social-icons justify-content-center justify-content-lg-start" id="footer-socials"></div>
+            </div>
+            
+            <div class="col-6 col-lg-3 text-center text-lg-start ps-lg-5">
+                <h6 class="text-uppercase fw-bold mb-3 small opacity-50">Menu</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="main.html" class="text-white text-decoration-none small opacity-75">Home</a></li>
+                    <li class="mb-2"><a href="about.html" class="text-white text-decoration-none small opacity-75">About</a></li>
+                    <li class="mb-2"><a href="#" class="text-white text-decoration-none small opacity-75" data-bs-toggle="modal" data-bs-target="#contactModal">Contact</a></li>
+                </ul>
+            </div>
+            
+            <div class="col-6 col-lg-4 text-center text-lg-start">
+                <h6 class="text-uppercase fw-bold mb-3 small opacity-50">Policy</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="policies.html" class="text-white text-decoration-none small opacity-75">Terms & conditions</a></li>
+                    <li class="mb-2"><a href="policies.html" class="text-white text-decoration-none small opacity-75">Privacy policy</a></li>
+                    <li class="mb-2"><a href="policies.html" class="text-white text-decoration-none small opacity-75">Refund policy</a></li>
+                    <li class="mb-2"><a href="policies.html" class="text-white text-decoration-none small opacity-75">Shipping policy</a></li>
+                    <li class="mb-2"><a href="policies.html" class="text-white text-decoration-none small opacity-75">Accessibility statement</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="row mt-4 pt-3 border-top border-white border-opacity-10">
+            <div class="col-12 text-center">
+                <p class="m-0 small opacity-50">© <span id="year"></span> Dashami Silks. All rights reserved.</p>
+            </div>
+        </div>
     </div>
 </footer>
+
+<div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background-color: #FFF0E6; border: 1px solid #800000;">
+      <div class="modal-header border-0">
+        <h5 class="modal-title brand-font fs-3" id="contactModalLabel" style="color: #800000;">Get in Touch</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body pb-4">
+        <div class="d-grid gap-3">
+            <a href="tel:+919880408959" class="btn btn-outline-danger d-flex align-items-center justify-content-start p-3" style="border-color: #800000; color: #800000;">
+                <i class="fa-solid fa-phone fa-lg me-3"></i>
+                <div class="text-start">
+                    <div class="small fw-bold text-uppercase">Call Us</div>
+                    <div>+91 98804 08959</div>
+                </div>
+            </a>
+            <a href="social_redirect.html?target=whatsapp%3A%2F%2Fsend%3Fphone%3D918904528959&platform=WhatsApp" target="_blank" class="btn btn-outline-success d-flex align-items-center justify-content-start p-3">
+                <i class="fa-brands fa-whatsapp fa-xl me-3"></i>
+                <div class="text-start">
+                    <div class="small fw-bold text-uppercase">WhatsApp Support</div>
+                    <div>Chat with us</div>
+                </div>
+            </a>
+             <a href="social_redirect.html?target=https%3A%2F%2Fwww.instagram.com%2Fdashami_silk&platform=Instagram" target="_blank" class="btn btn-outline-danger d-flex align-items-center justify-content-start p-3" style="border-color: #C13584; color: #C13584;">
+                <i class="fa-brands fa-instagram fa-xl me-3"></i>
+                <div class="text-start">
+                    <div class="small fw-bold text-uppercase">Instagram</div>
+                    <div>@dashami_silk</div>
+                </div>
+            </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="product.js"></script>
