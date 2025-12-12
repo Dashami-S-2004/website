@@ -13,14 +13,16 @@ let currentTranslateX = 0, currentTranslateY = 0;
 window.addEventListener('error', function(e) {
     if (e.target.tagName === 'IMG') {
         const src = e.target.src;
+        // If image fails, switch to logo
         if(!src.includes('logo/logo.png') && !src.includes('product_images/logo_circle.png')) {
              e.target.src = 'logo/logo.png';
+             
+             // ADDED BACK: Make the fallback logo dull (50% opacity) and padded
              e.target.classList.add('opacity-50', 'p-4');
+             
              if(e.target.parentElement.classList.contains('skeleton')) {
                 e.target.parentElement.classList.remove('skeleton');
             }
-        } else if (src.includes('logo/logo.png')) {
-            e.target.src = 'product_images/logo_circle.png';
         }
     }
 }, true);
@@ -38,7 +40,8 @@ async function init() {
         try { allProducts = await response.json(); } catch (e) { throw new Error("Invalid JSON format."); }
         
         loadProductDetails();
-        setupZoomHandlers(); // Initialize Zoom Listeners
+        setupZoomHandlers(); 
+        setupMainGallerySwipe(); 
 
     } catch (error) {
         console.error("Critical Error:", error);
@@ -132,24 +135,50 @@ function updateMainStage() {
     
     if (counter) counter.textContent = `${currentIndex + 1} / ${currentGallery.length}`;
     
-    img.style.opacity = 0.5;
-    setTimeout(() => { img.src = currentGallery[currentIndex]; img.style.opacity = 1; }, 150);
+    // CLEANUP: Remove error classes (dullness) before showing new image
+    img.classList.remove('opacity-50', 'p-4');
     
-    // Sync zoom view and RESET ZOOM
+    img.style.opacity = 0.5; // Fade out slightly for transition
+    setTimeout(() => { 
+        img.src = currentGallery[currentIndex]; 
+        img.style.opacity = 1; // Fade in bright
+    }, 150);
+    
     if(fullImg) {
         fullImg.src = currentGallery[currentIndex];
         resetZoom(); 
     }
 }
 
-// === ZOOM & PAN LOGIC (UPDATED FOR MOBILE) ===
+function setupMainGallerySwipe() {
+    const stage = document.querySelector('.pd-main-stage');
+    if(!stage) return;
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    stage.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, {passive: true});
+
+    stage.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleGesture();
+    }, {passive: true});
+
+    function handleGesture() {
+        if (touchStartX - touchEndX > 50) changeSlide(1); 
+        if (touchEndX - touchStartX > 50) changeSlide(-1);
+    }
+}
+
+// === ZOOM, PAN & FULLSCREEN SWIPE ===
 
 function setupZoomHandlers() {
     const img = document.getElementById('fullscreen-img');
     const viewer = document.getElementById('full-image-viewer');
     if (!img || !viewer) return;
 
-    // --- DESKTOP EVENTS ---
     viewer.addEventListener('wheel', function(e) {
         e.preventDefault();
         const delta = Math.sign(e.deltaY) * -0.2;
@@ -166,7 +195,7 @@ function setupZoomHandlers() {
             startX = e.clientX - currentTranslateX;
             startY = e.clientY - currentTranslateY;
             img.style.cursor = 'grabbing';
-            e.preventDefault(); // Prevent default drag behavior
+            e.preventDefault();
         }
     });
 
@@ -194,21 +223,17 @@ function setupZoomHandlers() {
         applyTransform();
     });
 
-    // --- MOBILE TOUCH EVENTS ---
     let initialPinchDist = 0;
     let initialZoom = 1;
     let lastTap = 0;
+    let swipeStartX = null;
 
-    // Handle Pinch Start & Tap
     img.addEventListener('touchstart', function(e) {
-        // 1 Finger: Check for double tap or start dragging
         if (e.touches.length === 1) {
             const currentTime = new Date().getTime();
             const tapLength = currentTime - lastTap;
-            
-            // Double Tap Logic
             if (tapLength < 300 && tapLength > 0) {
-                e.preventDefault(); // Prevent default zoom
+                e.preventDefault();
                 if (zoomLevel === 1) {
                     zoomLevel = 2.5;
                 } else {
@@ -216,44 +241,40 @@ function setupZoomHandlers() {
                 }
                 applyTransform();
             } else {
-                // Drag Logic Prep
                 if (zoomLevel > 1) {
                     isDragging = true;
                     startX = e.touches[0].clientX - currentTranslateX;
                     startY = e.touches[0].clientY - currentTranslateY;
+                } else {
+                    swipeStartX = e.touches[0].clientX;
                 }
             }
             lastTap = currentTime;
         } 
-        // 2 Fingers: Start Pinch
         else if (e.touches.length === 2) {
             isDragging = false;
             initialPinchDist = getPinchDistance(e);
             initialZoom = zoomLevel;
         }
-    }, { passive: false }); // Passive false allows preventDefault
+    }, { passive: false });
 
-    // Handle Movement (Pan & Zoom)
     img.addEventListener('touchmove', function(e) {
-        // 1 Finger: Pan Image (Only if zoomed in)
-        if (e.touches.length === 1 && zoomLevel > 1 && isDragging) {
-            e.preventDefault(); // Stop browser scrolling
-            currentTranslateX = e.touches[0].clientX - startX;
-            currentTranslateY = e.touches[0].clientY - startY;
-            applyTransform();
+        if (e.touches.length === 1) {
+            if (zoomLevel > 1 && isDragging) {
+                e.preventDefault(); 
+                currentTranslateX = e.touches[0].clientX - startX;
+                currentTranslateY = e.touches[0].clientY - startY;
+                applyTransform();
+            }
         }
-        // 2 Fingers: Pinch Zoom
         else if (e.touches.length === 2) {
-            e.preventDefault(); // Stop browser zoom
+            e.preventDefault(); 
             const currentDist = getPinchDistance(e);
             if (initialPinchDist > 0) {
                 const scale = currentDist / initialPinchDist;
                 let newZoom = initialZoom * scale;
-                
-                // Clamp Zoom
                 if (newZoom < 1) newZoom = 1;
                 if (newZoom > 5) newZoom = 5;
-                
                 zoomLevel = newZoom;
                 applyTransform();
             }
@@ -262,13 +283,21 @@ function setupZoomHandlers() {
 
     img.addEventListener('touchend', function(e) {
         isDragging = false;
+        if (zoomLevel === 1 && swipeStartX !== null && e.changedTouches.length > 0) {
+            let swipeEndX = e.changedTouches[0].clientX;
+            let diff = swipeStartX - swipeEndX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) changeSlide(1); 
+                else changeSlide(-1); 
+            }
+            swipeStartX = null;
+        }
         if (e.touches.length < 2) {
             initialPinchDist = 0;
         }
     });
 }
 
-// Helper for pinch distance
 function getPinchDistance(e) {
     return Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
@@ -297,15 +326,11 @@ function applyTransform() {
     }
 }
 
-// === VIEWER CONTROLS ===
-
 function openFullscreen() {
     const viewer = document.getElementById('full-image-viewer');
     const fullImg = document.getElementById('fullscreen-img');
-    
     fullImg.src = currentGallery[currentIndex];
     resetZoom(); 
-    
     viewer.style.display = 'flex';
     document.body.style.overflow = 'hidden'; 
 }

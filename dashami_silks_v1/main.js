@@ -325,7 +325,7 @@ function createProductCard(p) {
             <div class="stars">${"★".repeat(p.stars || 5)}</div>
             <div class="review-snippet">${snippet}</div>
             <a href="${link}" target="_blank" class="btn-card-action" onclick="event.stopPropagation()">
-                Buy on WhatsApp
+            <i class="fa-brands fa-whatsapp fa-xl me-2"></i> Buy / Inquire on WhatsApp
             </a>
         </div>
     `;

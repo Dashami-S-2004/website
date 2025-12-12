@@ -155,7 +155,7 @@ header { background: var(--primary); }
     -webkit-box-orient: vertical; overflow: hidden; 
 }
 .btn-card-action { 
-    display: block; background-color: #6aca6b; color: white; text-align: center; 
+    display: block; background-color: #3e9840; color: white; text-align: center; 
     padding: 12px; border-radius: 6px; font-weight: 700; font-size: 1rem; 
     text-decoration: none; width: 100%; border: none;
     transition: background-color 0.2s ease;
