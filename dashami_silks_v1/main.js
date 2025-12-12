@@ -3,7 +3,7 @@ let allProducts = [];
 let currentFilteredProducts = []; 
 let activeCategory = 'all'; 
 let loadedCount = 0; 
-const BATCH_SIZE = 50; // CONSTANT: Strictly 50
+const BATCH_SIZE = 5; // CONSTANT: Strictly 50
 let isLoading = false;
 
 // Global Error Handler
