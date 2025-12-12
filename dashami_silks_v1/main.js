@@ -3,7 +3,7 @@ let allProducts = [];
 let currentFilteredProducts = []; 
 let activeCategory = 'all'; 
 let loadedCount = 0; 
-let batchSize = 20; 
+const BATCH_SIZE = 50; // CONSTANT: Strictly 50
 let isLoading = false;
 
 // Global Error Handler
@@ -34,57 +34,94 @@ async function init() {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         try { allProducts = await response.json(); } catch (e) { throw new Error("Invalid JSON format."); }
         
-        updateBatchSize();
-        window.addEventListener('resize', updateBatchSize);
-        
         generateDynamicFilters(allProducts);
         setupDualSlider(allProducts);
         setupHeroSlider(allProducts);
-        applyAllFilters(); 
         
-        window.addEventListener('scroll', handleScroll);
+        // Setup the manual load button
+        setupLoadMoreButton(); 
+        
+        // Triggers the first batch of 50
+        applyAllFilters(); 
 
     } catch (error) {
         console.error("Critical Error:", error);
     }
 }
 
-function updateBatchSize() {
-    batchSize = window.innerWidth >= 768 ? 50 : 20;
-}
-
-function handleScroll() {
-    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 400) {
-        if (!isLoading && loadedCount < currentFilteredProducts.length) {
-            renderNextBatch();
+// Function to create and insert the Load More button
+function setupLoadMoreButton() {
+    let btnContainer = document.getElementById('load-more-container');
+    
+    if (!btnContainer) {
+        btnContainer = document.createElement('div');
+        btnContainer.id = 'load-more-container';
+        btnContainer.className = 'text-center my-4'; 
+        
+        // Insert after the product grid
+        const grid = document.getElementById('product-grid');
+        if (grid) {
+            grid.parentNode.insertBefore(btnContainer, grid.nextSibling);
         }
+
+        btnContainer.innerHTML = `
+            <button id="loadMoreBtn" class="btn btn-outline-danger rounded-pill px-5 py-2 shadow-sm" style="display:none;">
+                Load More Products
+            </button>
+        `;
+
+        const btn = document.getElementById('loadMoreBtn');
+        if(btn) btn.addEventListener('click', renderNextBatch);
     }
 }
 
 function renderNextBatch() {
     isLoading = true;
     const loader = document.getElementById('infinite-loader');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const grid = document.getElementById('product-grid');
+
+    // Hide button while loading
+    if(loadMoreBtn) loadMoreBtn.style.display = 'none';
     if(loader) loader.classList.remove('d-none');
 
     setTimeout(() => {
-        const grid = document.getElementById('product-grid');
+        // STRICT CALCULATION
+        const total = currentFilteredProducts.length;
         const start = loadedCount;
-        const end = Math.min(start + batchSize, currentFilteredProducts.length);
+        const end = Math.min(start + BATCH_SIZE, total); // Ensures we never go past 50 more
+        
         const batch = currentFilteredProducts.slice(start, end);
 
+        // Render cards
         batch.forEach(p => {
             const card = createProductCard(p);
             grid.appendChild(card);
         });
 
-        loadedCount = end;
+        loadedCount = end; // Update global counter
         isLoading = false;
         
         if(loader) loader.classList.add('d-none');
         
+        // Update "Showing X of Y" text
         const countLabel = document.getElementById('resultCount');
-        if (countLabel) countLabel.textContent = `Showing ${loadedCount} of ${currentFilteredProducts.length} products`;
-    }, 600);
+        if (countLabel) countLabel.textContent = `Showing ${loadedCount} of ${total} products`;
+
+        // Button Visibility Logic
+        if (loadMoreBtn) {
+            if (loadedCount < total) {
+                // Show button if there are products remaining
+                loadMoreBtn.style.display = 'inline-block';
+                const remaining = total - loadedCount;
+                loadMoreBtn.textContent = `Load More (${remaining} remaining)`;
+            } else {
+                // Hide button if all products are shown
+                loadMoreBtn.style.display = 'none';
+            }
+        }
+
+    }, 500);
 }
 
 function createProductCard(p) {
@@ -149,7 +186,7 @@ function applyAllFilters() {
     const maxPriceInput = document.getElementById('priceRangeMax');
     if(!searchInput) return;
 
-    const query = searchInput.value.toLowerCase();
+    const query = searchInput.value.toLowerCase().trim();
     const minPrice = parseInt(minPriceInput.value);
     const maxPrice = parseInt(maxPriceInput.value);
     const ratingEl = document.querySelector('input[name="ratingBtn"]:checked');
@@ -158,7 +195,10 @@ function applyAllFilters() {
     currentFilteredProducts = allProducts.filter(p => {
         if (!p.visible || p.deleted) return false;
         const matchesCategory = (activeCategory === 'all') || (p.category === activeCategory) || (p.fabric && p.fabric.includes(activeCategory));
-        const searchStr = ((p.name||'') + (p.category||'') + (p.fabric||'') + (p.color||'')).toLowerCase();
+        
+        // Includes ID Search
+        const searchStr = ((p.name||'') + (p.category||'') + (p.fabric||'') + (p.color||'') + (p.id||'')).toLowerCase();
+        
         const price = parseInt(p.discount_price || p.price || 0);
         
         return matchesCategory && 
@@ -167,15 +207,20 @@ function applyAllFilters() {
                ((p.stars || 0) >= minRating);
     });
 
+    // RESET EVERYTHING FOR NEW SEARCH
     const grid = document.getElementById('product-grid');
     grid.innerHTML = '';
-    loadedCount = 0;
+    loadedCount = 0; 
+
+    // Hide button initially
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if(loadMoreBtn) loadMoreBtn.style.display = 'none';
 
     if (currentFilteredProducts.length === 0) {
         grid.innerHTML = '<div class="text-center w-100 py-5 text-muted"><h4>No sarees match your filters</h4></div>';
         document.getElementById('resultCount').textContent = "0 products found";
     } else {
-        renderNextBatch();
+        renderNextBatch(); // This will load exactly 50
     }
 
     checkFilterAvailability(query, minPrice, maxPrice, activeCategory, minRating);
@@ -266,7 +311,10 @@ function checkFilterAvailability(currentQuery, minP, maxP, currentCat, currentRa
         const cat = btn.getAttribute('data-cat');
         const count = allProducts.filter(p => {
             if(!p.visible || p.deleted) return false;
-            const searchStr = ((p.name||'') + (p.category||'') + (p.fabric||'') + (p.color||'')).toLowerCase();
+            
+            // ID check here for filter button states
+            const searchStr = ((p.name||'') + (p.category||'') + (p.fabric||'') + (p.color||'') + (p.id||'')).toLowerCase();
+            
             const price = parseInt(p.discount_price || p.price || 0);
             const matchS = searchStr.includes(currentQuery);
             const matchP = price >= minP && price <= maxP;
