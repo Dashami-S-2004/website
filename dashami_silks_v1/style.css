@@ -32,7 +32,73 @@ header { background: var(--primary); }
 /* HERO CAROUSEL */
 #heroCarousel { position: relative; width: 100%; margin: 0; height: 260px; background: #000; }
 @media (min-width: 768px) { #heroCarousel { width: 95%; margin: 20px auto; height: 450px; border-radius: 10px; overflow: hidden; } }
-.hero-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
+
+/* ADDED: Ensure inner carousel fills height so images can center properly */
+#heroCarousel .carousel-inner { height: 100%; }
+
+/* FIXED: Added !important and ensure height is respected */
+.hero-img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+    object-position: center center !important; 
+    opacity: 0.9; 
+}
+
+/* HERO CAPTION OVERLAY STYLES */
+#heroCarousel .carousel-caption {
+    display: flex !important; /* Force show on mobile (overrides Bootstrap d-none) */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0; bottom: 0; left: 0; right: 0; /* Full cover */
+    background: rgba(0, 0, 0, 0.25); /* Subtle dark tint over image */
+    padding: 20px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8); /* Strong shadow for text pop */
+}
+
+/* Typography for Overlay */
+.hero-title {
+    font-family: 'Berkshire Swash', cursive; /* Match brand font */
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    font-weight: normal;
+    color: #fff;
+}
+
+.hero-price {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-bottom: 1.2rem;
+    color: #fff;
+    font-family: 'Lato', sans-serif;
+}
+
+/* Specific Button Styling for Hero */
+#heroCarousel .btn {
+    border: 1.5px solid white;
+    padding: 8px 30px;
+    font-size: 1rem;
+    border-radius: 50px; /* Rounded pill shape */
+    background: rgba(255,255,255,0.1); /* Slight glassy bg */
+    backdrop-filter: blur(2px);
+    transition: all 0.3s;
+    color: white;
+}
+#heroCarousel .btn:hover {
+    background: white;
+    color: var(--primary);
+    border-color: white;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    .hero-title { font-size: 1.4rem; }
+    .hero-price { font-size: 1.1rem; }
+    #heroCarousel .btn { padding: 6px 20px; font-size: 0.9rem; }
+}
+
 .hero-fade-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; background: linear-gradient(to bottom, transparent, var(--bg)); pointer-events: none; z-index: 2; }
 
 /* TRENDING BADGE */
